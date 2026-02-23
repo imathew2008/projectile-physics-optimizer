@@ -1,54 +1,18 @@
 import kotlin.math.*
 
-
-//stuff to change
-val v0robot          = Vector3(0.0, 0.0, 0.0)
-val hoodAngle0       = Math.toRadians(60.0)
-val goalAngle        = Math.toRadians(-45.0)
-const val topRpm     = 3000.0
-const val bottomRpm  = 9000.0
-
-
-//field + game piece constants
-const val floor = 0.0
-const val mass  = 0.45 //kg
-const val area  = 0.071 //m^2
-val ballRadius  = sqrt(area / Math.PI) //m
-val goal        = Vector3(3.05, 1.8, 0.0)
-val yMin        = goal.y - 0.01
-val yMax        = goal.y + 0.01
-
-
-//robot/shooter constants
-const val topRadi    = 0.1016 / 2.0
-const val bottomRadi = 0.0508 / 2.0
-val p0               = Vector3(0.0, 0.0, 0.0)
-val exitSpecs        = ballExitFromTwoWheels(
-    topWheelRadius    = topRadi,
-    bottomWheelRadius = bottomRadi,
-    topRpm            = topRpm,
-    bottomRpm         = bottomRpm,
-    ballRadius        = ballRadius,
+val exitSpecs = ballExitFromTwoWheels(
+    topWheelRadius    = config.shooter.topRadi,
+    bottomWheelRadius = config.shooter.bottomRadi,
+    topRpm            = config.shooter.topRpm,
+    bottomRpm         = config.shooter.bottomRpm,
+    ballRadius        = config.projectile.radius,
     vScale            = 0.85,
     spinScale         = 0.7)
 
-val v0ball = Vector3(cos(hoodAngle0) * exitSpecs.vExit, sin(hoodAngle0)
-        * exitSpecs.vExit, 0.0) + v0robot
-val omega  = Vector3(0.0, 0.0, exitSpecs.omegaBall)
-
-
-//physics constants
-const val magnusCoeff = 0.15
-const val cd          = 0.4
-const val airDensity  = 1.225 //kg/m^3
-val gravity           = Vector3(0.0, -9.81 * mass, 0.0)
-
-//sim constants
-const val dt       = 0.0001
-const val maxTime  = 100.0
-const val maxSpeed = 3149.61
-val dir            = (0..31).map { it/32.0 * 2 * PI }
-    .map{ Vector3(cos(it), sin(it), 0.0) } + Vector3.zero
+val v0ball  = Vector3(cos(config.shooter.hoodAngle0) * exitSpecs.vExit, sin(config.shooter.hoodAngle0)
+        * exitSpecs.vExit, 0.0) + config.shooter.robotv0
+val omega   = Vector3(0.0, 0.0, exitSpecs.omegaBall)
+val gravity = Vector3(0.0, config.environment.gravity * config.projectile.mass, 0.0)
 
 /**
  * Runs a simple forward Euler simulation to generate an initial trajectory guess.
@@ -58,7 +22,7 @@ val dir            = (0..31).map { it/32.0 * 2 * PI }
  *
  * Physics options:
  *  - gravity only
- *  - gravity + drag
+ *  - gravity + t
  *  - gravity + drag + Magnus (spin)
  *
  * Simulation stops when:
@@ -74,16 +38,17 @@ val dir            = (0..31).map { it/32.0 * 2 * PI }
  * @return list of sampled states (force, position, velocity) over time
  */
 fun initialGuess(p0: Vector3, v0: Vector3, dt: Double, airResistance: Boolean, spin: Boolean, ): List<ResultsToPrint> {
-        var p = p0
+    println("gravity=${config.environment.gravity}, mass=${config.projectile.mass}, dt=${config.simulation.dt}")
+    var p = p0
         var v = v0
         var t = 0.0
         val results = mutableListOf<ResultsToPrint>()
 
-        while(t <= maxTime && p.y >= 0.0) {
+        while(t <= config.simulation.maxTime && p.y >= 0.0) {
             val force = if(airResistance) {
                 if(spin) gravity + dragForce(v) + magnusForce(v, omega) else gravity + dragForce(v)
             } else gravity
-            val a = force / mass
+            val a = force / config.projectile.mass
             v += a * dt
             p += v * dt
             t += dt
@@ -139,7 +104,7 @@ fun sim(p0: Vector3, v0: Vector3, dt: Double, airResistance: Boolean, spin: Bool
         step          = dt,
         initPosition  = p0,
         initVelocity  = v0,
-        mass          = mass,
+        mass          = config.projectile.mass,
         computeForces =
             { _, vel ->
                 if(airResistance && spin) {
@@ -147,31 +112,31 @@ fun sim(p0: Vector3, v0: Vector3, dt: Double, airResistance: Boolean, spin: Bool
             } else if (airResistance) gravity + dragForce(vel) else gravity}
         ,
         terminate     = { time, pos, vel ->
-            time > maxTime || pos.y < floor || vel.norm > maxSpeed
+            time > config.simulation.maxTime || pos.y < config.simulation.floor || vel.norm > config.simulation.maxSpeed
         },
         log           = { _, pos, vel, force ->
-            val dist = (pos - goal).norm
+            val dist = (pos - config.target.goal).norm
             if(dist < bestPlaneDist) {
                 bestPlaneDist = dist
                 pBest         = pos
                 vBest         = vel
             }
 
-            val a = crossXPlane(pPrev, pos, goal.x)
+            val a = crossXPlane(pPrev, pos, config.target.goal.x)
             if (a != null) {
                 crossedPlane = true
                 val pAt = pPrev + (pos - pPrev) * a
                 val vAt = vPrev + (vel - vPrev) * a
 
-                val yzErr = hypot(pAt.y - goal.y, pAt.z - goal.z)
+                val yzErr = hypot(pAt.y - config.target.goal.y, pAt.z - config.target.goal.z)
                 if (yzErr < bestCrossErr) {
                     bestCrossErr = yzErr
                     pCross       = pAt
                     vCross       = vAt
                 }
-                if (pAt.y in yMin..yMax) hitWindow = true
-                if (pAt.y > yMax) above                  = true
-                if (angle(vAt) < 0.0) downward       = true
+                if (pAt.y in config.target.yMin..config.target.yMax) hitWindow = true
+                if (pAt.y > config.target.yMax) above = true
+                if (angle(vAt) < 0.0) downward = true
             }
 
             pPrev    = pos
@@ -180,7 +145,7 @@ fun sim(p0: Vector3, v0: Vector3, dt: Double, airResistance: Boolean, spin: Bool
         }
     )
     val posErr = if (pCross != null) bestCrossErr else bestPlaneDist
-    val phiErr = abs(wrapAngle(angle(vCross ?: vBest) - goalAngle))
+    val phiErr = abs(wrapAngle(angle(vCross ?: vBest) - config.target.goalAngle))
     val cost   = posErr + phiErr * 0.8
 
     return SimResult(
@@ -220,17 +185,17 @@ inline fun speedOptimizer(spin: Boolean, airResistance: Boolean, log: (Int, Vect
 
     val seed    = v0ball
     var bestV   = seed
-    var bestRes = sim(p0, bestV, dt, airResistance, spin)
+    var bestRes = sim(config.shooter.robot0, bestV, config.simulation.dt, airResistance, spin)
     var factor  = 2.0
 
     optimize(
         init        = bestV,
-        choiceSpace = dir,
+        choiceSpace = config.simulation.dir,
         mutate      = { current, dir ->
             val cand = current + dir * factor
             if (!possibleVelocity(cand)) null else cand
         },
-        simulate    = { v -> sim(p0, v, dt, airResistance, spin) },
+        simulate    = { v -> sim(config.shooter.robot0, v, config.simulation.dt, airResistance, spin) },
         error       = { res -> res.cost },
         terminate   = { _, _, res ->
             if(res.cost < bestRes.cost) {

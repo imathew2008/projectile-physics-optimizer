@@ -82,3 +82,55 @@ data class SimResult(
     val downward:     Boolean,
     val phiError:     Double,
     val distance:     Double)
+
+/**
+ * Full configuration bundle for projectile simulation.
+ *
+ * All values use SI units unless otherwise noted.
+ */
+data class SimConfig(
+    val environment: Environment,
+    val projectile: Projectile,
+    val simulation: Simulation,
+    val target: Target,
+    val shooter: Shooter
+)
+
+data class Environment(
+    val airDensity: Double,
+    val dragCoeff: Double,
+    val magnusCoeff: Double,
+    val gravity: Double
+)
+
+data class Shooter(
+    val topRadi: Double,
+    val bottomRadi: Double,
+    val robot0: Vector3,
+    val robotv0: Vector3,
+    val hoodAngle0: Double,
+    val topRpm: Double,
+    val bottomRpm: Double
+)
+
+data class Projectile(
+    val mass: Double,
+    val radius: Double
+) {
+    val area: Double get() = Math.PI * radius * radius
+}
+
+data class Simulation(
+    val dt: Double,
+    val maxTime: Double,
+    val maxSpeed: Double,
+    val floor: Double,
+    val dir: List<Vector3>
+)
+
+data class Target(
+    val goal: Vector3,
+    val goalAngle: Double,
+    val yMin: Double,
+    val yMax: Double
+)

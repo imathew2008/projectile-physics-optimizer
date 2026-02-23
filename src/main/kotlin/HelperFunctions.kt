@@ -63,8 +63,8 @@ fun ballExitFromTwoWheels(
     topRpm:            Double,
     bottomRpm:         Double,
     ballRadius:        Double,
-    vScale:            Double = 1.0,
-    spinScale:         Double = 1.0
+    vScale:            Double,
+    spinScale:         Double
 ): BallExit {
 
     val uTop = wheelSurfaceSpeed(topWheelRadius, topRpm)
@@ -92,9 +92,9 @@ fun magnusForce(v: Vector3, omega: Vector3): Vector3 {
     val speed = v.norm
     val dir = omega.cross(v)
     val dirNorm = dir.norm
-    val spinRatio = ballRadius * omega.norm / speed
-    val cl = magnusCoeff * spinRatio
-    val liftMag = 0.5 * airDensity * speed * speed * area * cl
+    val spinRatio = config.projectile.radius * omega.norm / speed
+    val cl = config.environment.magnusCoeff * spinRatio
+    val liftMag = 0.5 * config.environment.airDensity * speed * speed * config.projectile.area * cl
 
     return (dir / dirNorm) * liftMag
 }
@@ -107,7 +107,7 @@ fun magnusForce(v: Vector3, omega: Vector3): Vector3 {
  * @return drag force vector (N)
  */
 fun dragForce(v: Vector3): Vector3 {
-    val k = -0.5 * cd * airDensity * area
+    val k = -0.5 * config.environment.dragCoeff * config.environment.airDensity * config.projectile.area
     return v * (k * v.norm)
 }
 /**
@@ -138,7 +138,7 @@ fun crossXPlane(pPrev: Vector3, p: Vector3, xGoal: Double): Double? {
  */
 fun possibleVelocity(v: Vector3): Boolean {
     if (v.x <= 0.0) return false
-    if (v.norm > maxSpeed) return false
+    if (v.norm > config.simulation.maxSpeed) return false
     return true
 }
 /**
@@ -200,7 +200,7 @@ fun worldToScreen(p: Vector3, origin: Offset, scale: Float): Offset =
  * @return screen-space Offset for drawing in the inset
  */
 fun projTop(p: Vector3, goalZ: Double, insetCenter: Offset, scaleInset: Float): Offset =
-    topDownProjectXZCentered(p, goal.x, goalZ, insetCenter, scaleInset)
+    topDownProjectXZCentered(p, config.target.goal.x, goalZ, insetCenter, scaleInset)
 /**
  * Draws a connected polyline trajectory from a list of logged simulation results.
  *

@@ -44,8 +44,12 @@ fun main() = application {
             bestRes = result
             delay(250)
         }
-        println("Speed(m/s): ${bestRes!!.results[0].vel.norm}")
-        println("Angle(degrees): ${Math.toDegrees(angle((bestRes!!.results[0].vel)))}")
+//        println("Speed(m/s): ${bestRes!!.results[0].vel.norm}")
+//        println("Angle(degrees): ${Math.toDegrees(angle((bestRes!!.results[0].vel)))}")
+        bestRes?.results?.firstOrNull()?.let { r ->
+            println("Speed(m/s): ${r.vel.norm}")
+            println("Angle(deg): ${Math.toDegrees(angle(r.vel))}")
+        } ?: println("bestRes not ready OR results empty")
     }
 
     LaunchedEffect(Unit) {
@@ -53,8 +57,13 @@ fun main() = application {
             bestResAR = result
             delay(250)
         }
-        println("Speed(m/s) with air resistance: ${bestResAR!!.results[0].vel.norm}")
-        println("Angle(degrees) with air resistance: ${Math.toDegrees(angle((bestResAR!!.results[0].vel)))}\n")
+//        println("Speed(m/s) with air resistance: ${bestResAR!!.results.firstOrNull()?.vel?.norm}")
+//        println("Angle(degrees) with air resistance: ${Math.toDegrees(angle((bestResAR!!.results[0].vel)))}\n")
+        println(bestResAR?.results?.size)
+        bestResAR?.results?.firstOrNull()?.let { r ->
+            println("Speed(m/s): ${r.vel.norm}")
+            println("Angle(deg): ${Math.toDegrees(angle(r.vel))}")
+        } ?: println("bestRes not ready OR results empty")
     }
 
     LaunchedEffect(Unit) {
@@ -62,8 +71,12 @@ fun main() = application {
             bestResSpinAR = result
             delay(250)
         }
-        println("\nSpeed(m/s) with spin: ${bestResSpinAR!!.results[0].vel.norm}")
-        println("Angle(degrees) with spin: ${Math.toDegrees(angle((bestResSpinAR!!.results[0].vel)))}\n")
+//        println("\nSpeed(m/s) with spin: ${bestResSpinAR!!.results[0].vel.norm}")
+//        println("Angle(degrees) with spin: ${Math.toDegrees(angle((bestResSpinAR!!.results[0].vel)))}\n")
+        bestResSpinAR?.results?.firstOrNull()?.let { r ->
+            println("Speed(m/s): ${r.vel.norm}")
+            println("Angle(deg): ${Math.toDegrees(angle(r.vel))}")
+        } ?: println("bestRes not ready OR results empty")
     }
 
     Window(onCloseRequest = ::exitApplication, title = "Projectile Sim") {
@@ -72,9 +85,12 @@ fun main() = application {
                 val results         = bestRes      ?.results ?: return@bail
                 val resultsAR       = bestResAR    ?.results ?: return@bail
                 val resultsSpinAR   = bestResSpinAR?.results ?: return@bail
-                val initGuessAR     = initialGuess(p0, v0ball, dt, airResistance = true,  spin = false)
-                val initGuess       = initialGuess(p0, v0ball, dt, airResistance = false, spin = false)
-                val initGuessSpinAR = initialGuess(p0, v0ball, dt, airResistance = true,  spin = true)
+                val initGuessAR     = initialGuess(config.shooter.robot0, v0ball, config.simulation.dt,
+                    airResistance = true, spin = false)
+                val initGuess       = initialGuess(config.shooter.robot0, v0ball, config.simulation.dt,
+                    airResistance = false, spin = false)
+                val initGuessSpinAR = initialGuess(config.shooter.robot0, v0ball, config.simulation.dt,
+                    airResistance = true, spin = true)
 
                 val all = buildList {
                     addAll(initGuess)
@@ -108,8 +124,10 @@ fun main() = application {
                 val scale  = min(scaleX, scaleY)
                 val origin = Offset(padding, size.height - padding)
 
-                val goalBottom = worldToScreen(Vector3(goal.x, yMin - 0.127, 0.0), origin, scale)
-                val goalTop    = worldToScreen(Vector3(goal.x, yMax + 0.127, 0.0), origin, scale)
+                val goalBottom = worldToScreen(Vector3(config.target.goal.x,
+                    config.target.yMin - 0.127, 0.0), origin, scale)
+                val goalTop    = worldToScreen(Vector3(config.target.goal.x,
+                    config.target.yMax + 0.127, 0.0), origin, scale)
 
                 val insetSize     = min(size.width, size.height) * 0.35f
                 val insetTopLeft  = Offset(size.width - insetSize - insetPadding, insetPadding)
@@ -154,7 +172,7 @@ fun main() = application {
 
                 for ((list, _) in topDownLists) {
                     for (r in list) {
-                        val dx = abs(r.pos.x - goal.x)
+                        val dx = abs(r.pos.x - config.target.goal.x)
                         val dz = abs(r.pos.z - goalZ)
                         if (dx > maxAbsDx) maxAbsDx = dx
                         if (dz > maxAbsDz) maxAbsDz = dz
