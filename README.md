@@ -1,4 +1,4 @@
-# projectile-physics-optimizer
+# Projectile Physics Optimizer
 A 3D ballistic simulation and discrete trajectory optimizer with quadratic drag, Magnus lift, and real-time visualization.
 
 ## Overview
