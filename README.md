@@ -44,5 +44,5 @@ Built as a physics simulation for autonomous projectile targeting for FRC.
 ## Visualization
 
 <p align="center">
-  <img width="960" height="535" alt="trajectory-ui" src="https://github.com/user-attachments/assets/f1260121-eade-4fa0-a53a-3e6d955bd2a3" />
+  <img width="720" height="401.25" alt="trajectory-ui" src="https://github.com/user-attachments/assets/f1260121-eade-4fa0-a53a-3e6d955bd2a3" />
 </p>
