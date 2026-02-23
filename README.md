@@ -39,4 +39,6 @@ cost = distance_error + 0.8 * angle_error
 
 Built as a physics simulation for autonomous projectile targeting for FRC.
 
+## Visualization
+
 <img width="360" height="201" alt="trajectory-ui" src="https://github.com/user-attachments/assets/f1260121-eade-4fa0-a53a-3e6d955bd2a3" />
