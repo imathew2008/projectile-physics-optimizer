@@ -176,7 +176,7 @@ fun topDownProjectXZCentered(
  * @param end end point in screen space
  */
 fun DrawScope.trajectoryLine(color: Color, start: Offset, end: Offset) {
-    drawLine(color = color, start = start, end = end, strokeWidth = 4f)
+    drawLine(color = color, start = start, end = end, strokeWidth = 6f)
 }
 /**
  * Converts world XY coordinates into screen space for a 2D side view.
